@@ -6,7 +6,39 @@
 # which should be included with this package. The terms are also available at
 # http://www.gnu.org/licenses/gpl-3.0.html
 
-from qt.pe._block_qt import getblocks  # NOQA
+try:
+    from qt.pe._block_qt import getblocks  # NOQA
+except ImportError:
+    def _getblock(image):
+        width = image.width()
+        height = image.height()
+        if not width or not height:
+            return (0, 0, 0)
+        red = green = blue = 0
+        for y in range(height):
+            for x in range(width):
+                color = image.pixelColor(x, y)
+                red += color.red()
+                green += color.green()
+                blue += color.blue()
+        pixel_count = width * height
+        return (red // pixel_count, green // pixel_count, blue // pixel_count)
+
+    def getblocks(image, block_count_per_side):
+        width = image.width()
+        height = image.height()
+        if not width:
+            return []
+        block_width = max(width // block_count_per_side, 1)
+        block_height = max(height // block_count_per_side, 1)
+        result = []
+        for ih in range(block_count_per_side):
+            top = min(ih * block_height, height - block_height)
+            for iw in range(block_count_per_side):
+                left = min(iw * block_width, width - block_width)
+                crop = image.copy(left, top, block_width, block_height)
+                result.append(_getblock(crop))
+        return result
 
 # Converted to C
 # def getblock(image):

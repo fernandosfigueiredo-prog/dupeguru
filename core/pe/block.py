@@ -6,7 +6,63 @@
 # which should be included with this package. The terms are also available at
 # http://www.gnu.org/licenses/gpl-3.0.html
 
-from core.pe._block import NoBlocksError, DifferentBlockCountError, avgdiff, getblocks2  # NOQA
+try:
+    from core.pe._block import NoBlocksError, DifferentBlockCountError, avgdiff, getblocks2  # NOQA
+except ImportError:
+    class NoBlocksError(Exception):
+        pass
+
+    class DifferentBlockCountError(Exception):
+        pass
+
+    def _getblock(image):
+        if image.size[0]:
+            pixel_count = image.size[0] * image.size[1]
+            red = green = blue = 0
+            for r, g, b in image.getdata():
+                red += r
+                green += g
+                blue += b
+            return (red // pixel_count, green // pixel_count, blue // pixel_count)
+        return (0, 0, 0)
+
+    def getblocks2(image, block_count_per_side):
+        if not image.size[0]:
+            return []
+        width, height = image.size
+        block_width = max(width // block_count_per_side, 1)
+        block_height = max(height // block_count_per_side, 1)
+        result = []
+        for ih in range(block_count_per_side):
+            top = min(ih * block_height, height - block_height)
+            bottom = top + block_height
+            for iw in range(block_count_per_side):
+                left = min(iw * block_width, width - block_width)
+                right = left + block_width
+                crop = image.crop((left, top, right, bottom))
+                result.append(_getblock(crop))
+        return result
+
+    def _diff(first, second):
+        r1, g1, b1 = first
+        r2, g2, b2 = second
+        return abs(r1 - r2) + abs(g1 - g2) + abs(b1 - b2)
+
+    def avgdiff(first, second, limit=768, min_iterations=1):
+        if len(first) != len(second):
+            raise DifferentBlockCountError
+        if not first:
+            raise NoBlocksError
+        count = len(first)
+        current_sum = 0
+        for i, (first_block, second_block) in enumerate(zip(first, second), 1):
+            current_sum += _diff(first_block, second_block)
+            if current_sum > limit * i and i >= min_iterations:
+                return limit + 1
+        result = current_sum // count
+        if (not result) and current_sum:
+            result = 1
+        return result
 
 # Converted to C
 # def getblock(image):

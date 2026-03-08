@@ -4,7 +4,15 @@
 # which should be included with this package. The terms are also available at
 # http://www.gnu.org/licenses/gpl-3.0.html
 
-from core.pe._cache import bytes_to_colors  # noqa
+try:
+    from core.pe._cache import bytes_to_colors  # noqa
+except ImportError:
+    def bytes_to_colors(s):
+        result = []
+        limit = len(s) - (len(s) % 3)
+        for i in range(0, limit, 3):
+            result.append((s[i], s[i + 1], s[i + 2]))
+        return result
 
 
 def colors_to_bytes(colors):

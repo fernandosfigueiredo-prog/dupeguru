@@ -8,6 +8,8 @@
 import sys
 import os.path as op
 import gc
+from pathlib import Path
+from subprocess import run, PIPE
 
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtGui import QIcon, QPixmap
@@ -16,9 +18,29 @@ from PyQt5.QtWidgets import QApplication
 from hscommon.trans import install_gettext_trans_under_qt
 from qt.error_report_dialog import install_excepthook
 from qt.util import setup_qt_logging, create_qsettings
-from qt import dg_rc  # noqa: F401
 from qt.platform import BASE_PATH
 from core import __version__, __appname__
+
+
+def ensure_qt_resources():
+    qrc_path = Path(__file__).parent / "qt" / "dg.qrc"
+    rc_path = Path(__file__).parent / "qt" / "dg_rc.py"
+    try:
+        from qt import dg_rc as _dg_rc  # noqa: F401
+
+        return
+    except ImportError:
+        pass
+
+    result = run([sys.executable, "-m", "PyQt5.pyrcc_main", str(qrc_path)], stdout=PIPE, stderr=PIPE)
+    if result.returncode != 0:
+        stderr = result.stderr.decode(errors="replace")
+        raise ImportError(f"Unable to generate {rc_path.name} from {qrc_path.name}: {stderr}") from None
+    rc_path.write_bytes(result.stdout)
+    from qt import dg_rc as _dg_rc  # noqa: F401
+
+
+ensure_qt_resources()
 
 # SIGQUIT is not defined on Windows
 if sys.platform == "win32":
