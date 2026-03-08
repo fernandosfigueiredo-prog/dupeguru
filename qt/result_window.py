@@ -105,6 +105,13 @@ class ResultWindow(QMainWindow):
                 self.removeMarkedTriggered,
             ),
             (
+                "actionMarkPerfectOutsideReference",
+                "",
+                "",
+                tr("Mark Perfect Duplicates Outside Reference"),
+                self.markPerfectOutsideReferenceTriggered,
+            ),
+            (
                 "actionReprioritize",
                 "",
                 "",
@@ -246,6 +253,7 @@ class ResultWindow(QMainWindow):
         self.menuActions.addAction(self.actionMoveMarked)
         self.menuActions.addAction(self.actionCopyMarked)
         self.menuActions.addAction(self.actionRemoveMarked)
+        self.menuActions.addAction(self.actionMarkPerfectOutsideReference)
         self.menuActions.addAction(self.actionReprioritize)
         self.menuActions.addSeparator()
         self.menuActions.addAction(self.actionRemoveSelected)
@@ -311,6 +319,7 @@ class ResultWindow(QMainWindow):
         action_menu.addAction(self.actionMoveMarked)
         action_menu.addAction(self.actionCopyMarked)
         action_menu.addAction(self.actionRemoveMarked)
+        action_menu.addAction(self.actionMarkPerfectOutsideReference)
         action_menu.addSeparator()
         action_menu.addAction(self.actionRemoveSelected)
         action_menu.addAction(self.actionIgnoreSelected)
@@ -420,6 +429,9 @@ class ResultWindow(QMainWindow):
 
     def markInvertTriggered(self):
         self.app.model.mark_invert()
+
+    def markPerfectOutsideReferenceTriggered(self):
+        self.app.model.mark_perfect_duplicates_outside_ref()
 
     def markNoneTriggered(self):
         self.app.model.mark_none()

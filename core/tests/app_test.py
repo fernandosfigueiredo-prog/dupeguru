@@ -18,7 +18,7 @@ from hscommon.jobprogress.job import Job
 
 from core.tests.base import TestApp
 from core.tests.results_test import GetTestGroups
-from core import app, fs, engine
+from core import app, fs, engine, directories
 from core.scanner import ScanType
 
 
@@ -419,6 +419,19 @@ class TestCaseDupeGuruWithResults:
         # don't crash
         self.rtable.sort("percentage", False)
         # don't crash
+
+    def test_mark_perfect_duplicates_outside_ref_without_reference(self, do_setup):
+        self.groups[1].ref.is_ref = True
+        self.app.mark_perfect_duplicates_outside_ref()
+        eq_(0, self.app.results.mark_count)
+
+    def test_mark_perfect_duplicates_outside_ref_marks_only_100_non_ref(self, do_setup):
+        self.groups[1].ref.is_ref = True
+        self.app.directories.set_state(self.app.directories[0], directories.DirectoryState.REFERENCE)
+        self.app.mark_perfect_duplicates_outside_ref()
+        eq_(1, self.app.results.mark_count)
+        assert self.app.results.is_marked(self.groups[1].dupes[0])
+        assert not self.app.results.is_marked(self.groups[1].ref)
 
 
 class TestCaseDupeGuruRenameSelected:

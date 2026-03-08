@@ -638,6 +638,29 @@ class DupeGuru(Broadcaster):
         self.results.mark_none()
         self.notify("marking_changed")
 
+    def mark_perfect_duplicates_outside_ref(self):
+        """Mark only 100% matches that are outside Reference folders."""
+        has_reference = any(state == directories.DirectoryState.REFERENCE for state in self.directories.states.values())
+        if not has_reference:
+            self.view.show_message(tr("No Reference folder is defined. Nothing has been marked."))
+            return
+        to_mark = []
+        for group in self.results.groups:
+            ref = group.ref
+            if ref is None or not ref.is_ref:
+                continue
+            for dupe in group.dupes:
+                if dupe.is_ref:
+                    continue
+                match = group.get_match_of(dupe)
+                if match and match.percentage == 100:
+                    to_mark.append(dupe)
+        if not to_mark:
+            self.view.show_message(tr("No perfect duplicates outside Reference were found."))
+            return
+        self.results.mark_multiple(to_mark)
+        self.notify("marking_changed")
+
     def mark_invert(self):
         """Invert the marked state of all dupes in the results."""
         self.results.mark_invert()
