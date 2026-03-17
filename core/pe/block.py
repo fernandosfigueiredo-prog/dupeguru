@@ -6,24 +6,66 @@
 # which should be included with this package. The terms are also available at
 # http://www.gnu.org/licenses/gpl-3.0.html
 
-from core.pe._block import NoBlocksError, DifferentBlockCountError, avgdiff, getblocks2  # NOQA
+try:
+    from core.pe._block import NoBlocksError, DifferentBlockCountError, avgdiff, getblocks2  # NOQA
+except ImportError:
+    class NoBlocksError(Exception):
+        pass
 
-# Converted to C
-# def getblock(image):
-#     """Returns a 3 sized tuple containing the mean color of 'image'.
-#
-#     image: a PIL image or crop.
-#     """
-#     if image.size[0]:
-#         pixel_count = image.size[0] * image.size[1]
-#         red = green = blue = 0
-#         for r,g,b in image.getdata():
-#             red += r
-#             green += g
-#             blue += b
-#         return (red // pixel_count, green // pixel_count, blue // pixel_count)
-#     else:
-#         return (0,0,0)
+    class DifferentBlockCountError(Exception):
+        pass
+
+    def getblock(image):
+        """Returns a 3 sized tuple containing the mean color of 'image'.
+
+        image: a PIL image or crop.
+        """
+        if image.size[0]:
+            pixel_count = image.size[0] * image.size[1]
+            red = green = blue = 0
+            for r, g, b in image.getdata():
+                red += r
+                green += g
+                blue += b
+            return (red // pixel_count, green // pixel_count, blue // pixel_count)
+        else:
+            return (0, 0, 0)
+
+    def getblocks2(image, block_count_per_side):
+        if not image.size[0]:
+            return []
+        width, height = image.size
+        block_width = max(width // block_count_per_side, 1)
+        block_height = max(height // block_count_per_side, 1)
+        result = []
+        for ih in range(block_count_per_side):
+            top = min(ih * block_height, height - block_height)
+            bottom = top + block_height
+            for iw in range(block_count_per_side):
+                left = min(iw * block_width, width - block_width)
+                right = left + block_width
+                crop = image.crop((left, top, right, bottom))
+                result.append(getblock(crop))
+        return result
+
+    def avgdiff(first, second, limit=768, min_iterations=1):
+        if len(first) != len(second):
+            raise DifferentBlockCountError
+        if not first:
+            raise NoBlocksError
+
+        count = len(first)
+        total = 0
+
+        for i, (f, s) in enumerate(zip(first, second), start=1):
+            total += abs(f[0] - s[0]) + abs(f[1] - s[1]) + abs(f[2] - s[2])
+            if total > limit * i and i >= min_iterations:
+                return limit + 1
+
+        result = total // count
+        if not result and total:
+            result = 1
+        return result
 
 # This is not used anymore
 # def getblocks(image,blocksize):

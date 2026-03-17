@@ -118,7 +118,12 @@ def build_normpo():
 def build_pe_modules():
     print("Building PE Modules")
     # Leverage setup.py to build modules
-    subprocess.check_call([sys.executable, "setup.py", "build_ext", "--inplace"])
+    try:
+        subprocess.check_call([sys.executable, "setup.py", "build_ext", "--inplace"])
+    except subprocess.CalledProcessError as exc:
+        print("Warning: C extensions could not be built (compiler missing or build failed).")
+        print("Falling back to pure-Python implementation where available.")
+        print(f"Error: {exc}")
 
 
 def build_normal():
